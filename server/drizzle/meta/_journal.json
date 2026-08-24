@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1787557787820,
+      "tag": "0000_supreme_moondragon",
+      "breakpoints": true
+    }
+  ]
+}
