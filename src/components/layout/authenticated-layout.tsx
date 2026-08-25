@@ -1,6 +1,7 @@
 import { Outlet } from '@tanstack/react-router'
 import { getCookie } from '@/lib/cookies'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 import { LayoutProvider } from '@/context/layout-provider'
 import { SearchProvider } from '@/context/search-provider'
 import {
@@ -23,7 +24,9 @@ type AuthenticatedLayoutProps = {
 }
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+  const { auth } = useAuthStore()
   const defaultOpen = getCookie('sidebar_state') !== 'false'
+  const displayUser = auth.user || sidebarData.user
   return (
     <SearchProvider>
       <SidebarProvider defaultOpen={defaultOpen}>
@@ -39,7 +42,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
               ))}
             </SidebarContent>
             <SidebarFooter>
-              <NavUser user={sidebarData.user} />
+              <NavUser user={displayUser} />
             </SidebarFooter>
             <SidebarRail />
           </AppSidebar>
