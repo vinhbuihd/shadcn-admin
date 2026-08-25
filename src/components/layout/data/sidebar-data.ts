@@ -2,6 +2,7 @@ import {
   Construction,
   LayoutDashboard,
   Monitor,
+  Bookmark,
   Bug,
   ListTodo,
   FileX,
@@ -12,6 +13,7 @@ import {
   Palette,
   ServerOff,
   Settings,
+  Tag,
   Wrench,
   UserCog,
   UserX,
@@ -61,6 +63,16 @@ export const sidebarData: SidebarData = {
           title: 'Tasks',
           url: '/tasks',
           icon: ListTodo,
+        },
+        {
+          title: 'Bookmarks',
+          url: '/bookmarks',
+          icon: Bookmark,
+        },
+        {
+          title: 'Tags',
+          url: '/tags',
+          icon: Tag,
         },
         {
           title: 'Apps',

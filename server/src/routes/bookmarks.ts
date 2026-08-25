@@ -1,8 +1,8 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { db } from '../db/index.js'
-import { bookmarks } from '../db/schema/index.js'
+import { bookmarks, bookmarkTags, tags } from '../db/schema/index.js'
 import { hasPostgresErrorCode } from '../lib/postgres-errors.js'
 
 const createBookmarkBodySchema = z.object({
@@ -22,6 +22,13 @@ const bookmarkParamsSchema = z.object({
   id: z.string().uuid(),
 })
 
+const bookmarkTagParamsSchema = z.object({
+  bookmarkId: z.string().uuid(),
+  tagId: z.string().uuid(),
+})
+
+
+
 const bookmarkSelection = {
   id: bookmarks.id,
   url: bookmarks.url,
@@ -30,6 +37,8 @@ const bookmarkSelection = {
   createdAt: bookmarks.createdAt,
   updatedAt: bookmarks.updatedAt,
 }
+
+class NotFoundError extends Error { }
 
 export async function bookmarkRoutes(app: FastifyInstance) {
   app.post('/bookmarks', { preHandler: [app.authenticate] }, async (request, reply) => {
@@ -202,4 +211,118 @@ export async function bookmarkRoutes(app: FastifyInstance) {
       })
     }
   })
+
+  app.put('/bookmarks/:bookmarkId/tags/:tagId', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.userId
+    const paramsResult = bookmarkTagParamsSchema.safeParse(request.params)
+    // check bookmarkId and tagId are valid uuid
+    if (!paramsResult.success) {
+      return reply.code(400).send({
+        message: 'Invalid request',
+      })
+    }
+
+    const { bookmarkId, tagId } = paramsResult.data
+
+    try {
+
+      await db.transaction(async (tx) => {
+        // check if bookmark exists and tag exists  and belongs to the user
+        const foundBookmarks = await tx.select().from(bookmarks).where(
+          and(
+            eq(bookmarks.id, bookmarkId),
+            eq(bookmarks.userId, userId)
+          )
+        ).limit(1)
+
+        // check tag exists and belongs to the user
+        const foundTags = await tx.select().from(tags).where(
+          and(
+            eq(tags.id, tagId),
+            eq(tags.userId, userId)
+          )
+        ).limit(1)
+
+        if (foundBookmarks.length === 0 || foundTags.length === 0) {
+          throw new NotFoundError()   // ← xem giải thích bên dưới
+
+        }
+
+        await tx.insert(bookmarkTags).values({
+          bookmarkId, tagId, createdAt: new Date()
+        })
+
+      })
+
+      return reply.code(200).send({
+        message: 'Tag attached to bookmark successfully',
+      })
+
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return reply.code(404).send({ message: 'Bookmark or tag not found' })
+      }
+
+      if (hasPostgresErrorCode(error, '23505')) {
+        return reply.code(409).send({ message: 'Bookmark tag already exists' })
+      }
+
+
+      request.log.error(error)
+
+      return reply.code(500).send({
+        message: 'Internal server error',
+      })
+    }
+  })
+
+
+  app.delete('/bookmarks/:bookmarkId/tags/:tagId', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.userId
+    const paramsResult = bookmarkTagParamsSchema.safeParse(request.params)
+    // check bookmarkId and tagId are valid uuid
+    if (!paramsResult.success) {
+      return reply.code(400).send({
+        message: 'Invalid request',
+      })
+    }
+
+    const { bookmarkId, tagId } = paramsResult.data
+
+    try {
+      const deletedBookmarkTags = await db
+        .delete(bookmarkTags)
+        .where(
+          and(
+            eq(bookmarkTags.bookmarkId, bookmarkId),
+            eq(bookmarkTags.tagId, tagId),
+            inArray(bookmarkTags.bookmarkId, db.select({ id: bookmarks.id }).from(bookmarks).where(eq(bookmarks.userId, userId)))
+          )
+        )
+        .returning({
+          bookmarkId: bookmarkTags.bookmarkId,
+          tagId: bookmarkTags.tagId,
+        })
+
+      const deletedBookmarkTag = deletedBookmarkTags[0]
+
+      if (!deletedBookmarkTag) {
+        return reply.code(404).send({
+          message: 'Bookmark tag not found',
+        })
+      }
+
+      return reply.code(204).send()
+    } catch (error) {
+      request.log.error(error)
+
+      return reply.code(500).send({
+        message: 'Internal server error',
+      })
+    }
+  })
+
+
 }
+
+
