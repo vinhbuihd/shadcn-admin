@@ -1,12 +1,43 @@
+import fastifyCookie from '@fastify/cookie'
+import '@fastify/jwt'
+import fastifyJwt from '@fastify/jwt'
 import { sql } from 'drizzle-orm'
-import Fastify from 'fastify'
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
+import { env } from './config/env.js'
 import { db, pool } from './db/index.js'
+import { authRoutes } from './routes/auth.js'
 import { bookmarkRoutes } from './routes/bookmarks.js'
 import { tagRoutes } from './routes/tags.js'
+
 
 export function buildApp() {
     const app = Fastify({
         logger: true,
+    })
+
+    app.register(fastifyCookie)
+
+    app.register(fastifyJwt, {
+        secret: env.JWT_SECRET,
+        cookie: {
+            cookieName: 'auth',
+            signed: false,
+        },
+    })
+
+    app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+        try {
+            await request.jwtVerify()
+        } catch (error) {
+            return reply.code(401).send({
+                message: 'Unauthorized',
+            })
+        }
+    })
+
+
+    app.register(authRoutes, {
+        prefix: '/api',
     })
 
     app.register(tagRoutes, {

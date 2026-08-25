@@ -9,25 +9,21 @@ const createTagBodySchema = z.object({
     name: z.string().trim().min(1).max(50),
 })
 
-const userIdSchema = z.string().uuid()
 const tagParamsSchema = z.object({
     id: z.string().uuid(),
 })
 
 export async function tagRoutes(app: FastifyInstance) {
-    app.post('/tags', async (request, reply) => {
-        const userIdResult = userIdSchema.safeParse(
-            request.headers['x-user-id']
-        )
-
+    app.post('/tags', { preHandler: [app.authenticate] }, async (request, reply) => {
         const bodyResult = createTagBodySchema.safeParse(request.body)
 
-        if (!userIdResult.success || !bodyResult.success) {
+        if (!bodyResult.success) {
             return reply.code(400).send({
                 message: 'Invalid request',
             })
         }
-        const userId = userIdResult.data
+
+        const userId = request.user.userId
         const name = bodyResult.data.name.toLowerCase()
 
         try {
@@ -72,16 +68,8 @@ export async function tagRoutes(app: FastifyInstance) {
     })
 
 
-    app.get('/tags', async (request, reply) => {
-        const userIdResult = userIdSchema.safeParse(
-            request.headers['x-user-id']
-        )
-        if (!userIdResult.success) {
-            return reply.code(400).send({
-                message: 'Invalid user ID',
-            })
-        }
-        const userId = userIdResult.data
+    app.get('/tags', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const userId = request.user.userId
 
         try {
             const userTags = await db
@@ -107,14 +95,12 @@ export async function tagRoutes(app: FastifyInstance) {
         }
     })
 
-    app.patch('/tags/:id', async (request, reply) => {
-        const userIdResult = userIdSchema.safeParse(
-            request.headers['x-user-id']
-        )
+    app.patch('/tags/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const userId = request.user.userId
         const paramsResult = tagParamsSchema.safeParse(request.params)
         const bodyResult = createTagBodySchema.safeParse(request.body)
 
-        if (!userIdResult.success || !paramsResult.success || !bodyResult.success) {
+        if (!paramsResult.success || !bodyResult.success) {
             return reply.code(400).send({
                 message: 'Invalid request',
             })
@@ -131,7 +117,7 @@ export async function tagRoutes(app: FastifyInstance) {
                 .where(
                     and(
                         eq(tags.id, paramsResult.data.id),
-                        eq(tags.userId, userIdResult.data)
+                        eq(tags.userId, userId)
                     )
                 )
                 .returning({
@@ -165,13 +151,11 @@ export async function tagRoutes(app: FastifyInstance) {
         }
     })
 
-    app.delete('/tags/:id', async (request, reply) => {
-        const userIdResult = userIdSchema.safeParse(
-            request.headers['x-user-id']
-        )
+    app.delete('/tags/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const userId = request.user.userId
         const paramsResult = tagParamsSchema.safeParse(request.params)
 
-        if (!userIdResult.success || !paramsResult.success) {
+        if (!paramsResult.success) {
             return reply.code(400).send({
                 message: 'Invalid request',
             })
@@ -182,7 +166,7 @@ export async function tagRoutes(app: FastifyInstance) {
                 .where(
                     and(
                         eq(tags.id, paramsResult.data.id),
-                        eq(tags.userId, userIdResult.data)
+                        eq(tags.userId, userId)
                     )
                 )
                 .returning({

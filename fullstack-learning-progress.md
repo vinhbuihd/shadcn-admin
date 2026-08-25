@@ -1,6 +1,6 @@
 # Lộ trình và tiến độ học Fullstack 2026
 
-> Cập nhật gần nhất: 24/08/2026
+> Cập nhật gần nhất: 25/08/2026
 
 ## 1. Mục tiêu
 
@@ -157,7 +157,7 @@ x-user-id: <UUID>
 
 ## 4. Trạng thái hiện tại
 
-Giai đoạn hiện tại: **hoàn thành nền tảng backend và CRUD cơ bản; chuẩn bị học Authentication**.
+Giai đoạn hiện tại: **hoàn thành Authentication; chuẩn bị học Giai đoạn 2 (hoàn thiện Bookmark và Tag)**.
 
 Đã hoàn thành:
 
@@ -174,10 +174,20 @@ Giai đoạn hiện tại: **hoàn thành nền tảng backend và CRUD cơ bả
 - [x] CRUD Bookmark cơ bản.
 - [x] Kiểm tra TypeScript và build backend thành công.
 
+Đã hoàn thành thêm (Giai đoạn 1 - Authentication):
+
+- [x] Cài Argon2, Fastify JWT và Fastify Cookie.
+- [x] `POST /api/auth/register` — hash password bằng Argon2, tạo user, tự động đăng nhập.
+- [x] `POST /api/auth/login` — verify password, không tiết lộ email tồn tại hay không qua message.
+- [x] JWT lưu trong `HttpOnly` cookie, `path: '/'` (cookie mặc định scope theo path của request nếu không set, dễ gây bug 401 ở route khác).
+- [x] Authentication middleware `app.authenticate` dùng `preHandler`.
+- [x] `GET /api/auth/me`.
+- [x] `POST /api/auth/logout`.
+- [x] Thay `x-user-id` bằng `request.user.userId` trong Tag và Bookmark API.
+- [x] Module augmentation cho `FastifyInstance.authenticate` và `FastifyJWT` (`src/types/fastify.d.ts`).
+
 Chưa hoàn thành:
 
-- [ ] Authentication thật.
-- [ ] Thay `x-user-id` bằng user lấy từ token.
 - [ ] Gắn và gỡ tag cho bookmark.
 - [ ] Trả bookmark kèm danh sách tag.
 - [ ] Search, filter và pagination.
@@ -188,23 +198,23 @@ Chưa hoàn thành:
 
 ## 5. Lộ trình tiếp theo
 
-### Giai đoạn 1: Authentication
+### Giai đoạn 1: Authentication — Hoàn thành
 
 Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 
-- [ ] Cài Argon2, Fastify JWT và Fastify Cookie.
-- [ ] Tạo `POST /api/auth/register`.
-- [ ] Chuẩn hóa và kiểm tra email.
-- [ ] Hash mật khẩu trước khi lưu.
-- [ ] Tạo `POST /api/auth/login`.
-- [ ] Xác minh password hash.
-- [ ] Tạo JWT có thời hạn.
-- [ ] Lưu JWT trong `HttpOnly` cookie.
-- [ ] Tạo authentication middleware.
-- [ ] Tạo `GET /api/auth/me`.
-- [ ] Tạo `POST /api/auth/logout`.
-- [ ] Thay `x-user-id` trong Tag và Bookmark API bằng user ID từ token.
-- [ ] Kiểm tra user A không thể đọc, sửa hoặc xóa dữ liệu user B.
+- [x] Cài Argon2, Fastify JWT và Fastify Cookie.
+- [x] Tạo `POST /api/auth/register`.
+- [x] Chuẩn hóa và kiểm tra email.
+- [x] Hash mật khẩu trước khi lưu.
+- [x] Tạo `POST /api/auth/login`.
+- [x] Xác minh password hash.
+- [x] Tạo JWT có thời hạn.
+- [x] Lưu JWT trong `HttpOnly` cookie.
+- [x] Tạo authentication middleware.
+- [x] Tạo `GET /api/auth/me`.
+- [x] Tạo `POST /api/auth/logout`.
+- [x] Thay `x-user-id` trong Tag và Bookmark API bằng user ID từ token.
+- [x] Kiểm tra user A không thể đọc, sửa hoặc xóa dữ liệu user B.
 
 ### Giai đoạn 2: Hoàn thiện Bookmark và Tag
 
@@ -269,23 +279,9 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 
 ## 6. Bước học kế tiếp
 
-Chủ đề tiếp theo: **Authentication với Argon2, JWT và HttpOnly cookie**.
+Chủ đề tiếp theo: **Giai đoạn 2 — Hoàn thiện Bookmark và Tag** (gắn/gỡ tag cho bookmark, transaction, trả bookmark kèm tag, search, filter, sort, pagination).
 
-Kết quả cần đạt:
-
-```text
-Register/Login
-      ↓
-JWT trong HttpOnly cookie
-      ↓
-Authentication middleware
-      ↓
-request.user.id
-      ↓
-Tag và Bookmark API không còn dùng x-user-id
-```
-
-Nguyên tắc bảo mật cần giữ:
+Nguyên tắc bảo mật đang giữ:
 
 - Không lưu mật khẩu thô.
 - Không trả password hash về client.
@@ -293,3 +289,9 @@ Nguyên tắc bảo mật cần giữ:
 - Mọi query tài nguyên cá nhân phải giới hạn bằng user đã xác thực.
 - Không đưa secret vào Git.
 - Không tiết lộ lỗi database nội bộ trong API response.
+
+### Bài học rút ra từ Giai đoạn 1
+
+- Cookie không set `path` sẽ mặc định scope theo thư mục của URL lúc set (vd: set ở `/api/auth/login` → cookie chỉ áp dụng cho `/api/auth/*`), không phải toàn site. Luôn set `path: '/'` tường minh khi cookie cần dùng ở nhiều route.
+- TypeScript không tự biết type của `app.decorate(...)` hay payload JWT — cần module augmentation (`declare module 'fastify'`, `declare module '@fastify/jwt'`) trong file `.d.ts` riêng.
+- Không tiết lộ khác biệt giữa "email không tồn tại" và "sai mật khẩu" trong response login — tránh user enumeration.

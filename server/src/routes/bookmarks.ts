@@ -18,7 +18,6 @@ const updateBookmarkBodySchema = createBookmarkBodySchema
     { message: 'At least one field is required' }
   )
 
-const userIdSchema = z.string().uuid()
 const bookmarkParamsSchema = z.object({
   id: z.string().uuid(),
 })
@@ -33,19 +32,16 @@ const bookmarkSelection = {
 }
 
 export async function bookmarkRoutes(app: FastifyInstance) {
-  app.post('/bookmarks', async (request, reply) => {
-    const userIdResult = userIdSchema.safeParse(
-      request.headers['x-user-id']
-    )
+  app.post('/bookmarks', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.userId
     const bodyResult = createBookmarkBodySchema.safeParse(request.body)
 
-    if (!userIdResult.success || !bodyResult.success) {
+    if (!bodyResult.success) {
       return reply.code(400).send({
         message: 'Invalid request',
       })
     }
 
-    const userId = userIdResult.data
     const body = bodyResult.data
 
     try {
@@ -84,22 +80,14 @@ export async function bookmarkRoutes(app: FastifyInstance) {
     }
   })
 
-  app.get('/bookmarks', async (request, reply) => {
-    const userIdResult = userIdSchema.safeParse(
-      request.headers['x-user-id']
-    )
-
-    if (!userIdResult.success) {
-      return reply.code(400).send({
-        message: 'Invalid request',
-      })
-    }
+  app.get('/bookmarks', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.userId
 
     try {
       const userBookmarks = await db
         .select(bookmarkSelection)
         .from(bookmarks)
-        .where(eq(bookmarks.userId, userIdResult.data))
+        .where(eq(bookmarks.userId, userId))
         .orderBy(desc(bookmarks.createdAt))
 
       return {
@@ -114,15 +102,13 @@ export async function bookmarkRoutes(app: FastifyInstance) {
     }
   })
 
-  app.patch('/bookmarks/:id', async (request, reply) => {
-    const userIdResult = userIdSchema.safeParse(
-      request.headers['x-user-id']
-    )
+  app.patch('/bookmarks/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.userId
+
     const paramsResult = bookmarkParamsSchema.safeParse(request.params)
     const bodyResult = updateBookmarkBodySchema.safeParse(request.body)
 
     if (
-      !userIdResult.success ||
       !paramsResult.success ||
       !bodyResult.success
     ) {
@@ -145,7 +131,7 @@ export async function bookmarkRoutes(app: FastifyInstance) {
         .where(
           and(
             eq(bookmarks.id, paramsResult.data.id),
-            eq(bookmarks.userId, userIdResult.data)
+            eq(bookmarks.userId, userId)
           )
         )
         .returning(bookmarkSelection)
@@ -176,13 +162,11 @@ export async function bookmarkRoutes(app: FastifyInstance) {
     }
   })
 
-  app.delete('/bookmarks/:id', async (request, reply) => {
-    const userIdResult = userIdSchema.safeParse(
-      request.headers['x-user-id']
-    )
+  app.delete('/bookmarks/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.userId
     const paramsResult = bookmarkParamsSchema.safeParse(request.params)
 
-    if (!userIdResult.success || !paramsResult.success) {
+    if (!paramsResult.success) {
       return reply.code(400).send({
         message: 'Invalid request',
       })
@@ -194,7 +178,7 @@ export async function bookmarkRoutes(app: FastifyInstance) {
         .where(
           and(
             eq(bookmarks.id, paramsResult.data.id),
-            eq(bookmarks.userId, userIdResult.data)
+            eq(bookmarks.userId, userId)
           )
         )
         .returning({
