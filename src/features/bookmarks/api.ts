@@ -3,8 +3,8 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
-import { type Tag } from '@/features/tags/api'
 import { apiClient } from '@/lib/api-client'
+import { type Tag } from '@/features/tags/api'
 
 export interface Bookmark {
   id: string

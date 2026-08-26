@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
-import { type Bookmark, useDeleteBookmark } from '@/features/bookmarks/api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { type Bookmark, useDeleteBookmark } from '@/features/bookmarks/api'
 
 type BookmarkDeleteDialogProps = {
   open: boolean

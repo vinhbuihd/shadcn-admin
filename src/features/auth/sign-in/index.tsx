@@ -46,7 +46,10 @@ export function SignIn() {
           </p>
           <p className='text-muted-foreground text-center text-sm'>
             Don&apos;t have an account?{' '}
-            <Link to='/sign-up' className='hover:text-primary underline underline-offset-4'>
+            <Link
+              to='/sign-up'
+              className='hover:text-primary underline underline-offset-4'
+            >
               Sign up
             </Link>
           </p>

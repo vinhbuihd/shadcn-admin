@@ -1,11 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { CheckIcon, Plus } from 'lucide-react'
-import {
-  type Bookmark,
-  useAttachTag,
-  useDetachTag,
-} from '@/features/bookmarks/api'
-import { tagsQueryOptions } from '@/features/tags/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,6 +15,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  type Bookmark,
+  useAttachTag,
+  useDetachTag,
+} from '@/features/bookmarks/api'
+import { tagsQueryOptions } from '@/features/tags/api'
 
 type BookmarkTagsPopoverProps = {
   bookmark: Bookmark
@@ -63,10 +63,7 @@ export function BookmarkTagsPopover({ bookmark }: BookmarkTagsPopoverProps) {
               {(tags ?? []).map((tag) => {
                 const isSelected = attachedIds.has(tag.id)
                 return (
-                  <CommandItem
-                    key={tag.id}
-                    onSelect={() => toggleTag(tag.id)}
-                  >
+                  <CommandItem key={tag.id} onSelect={() => toggleTag(tag.id)}>
                     <div
                       className={cn(
                         'border-primary flex size-4 items-center justify-center rounded-sm border',

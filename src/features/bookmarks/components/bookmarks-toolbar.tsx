@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { tagsQueryOptions } from '@/features/tags/api'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -9,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { tagsQueryOptions } from '@/features/tags/api'
 
 type BookmarksToolbarProps = {
   search: string

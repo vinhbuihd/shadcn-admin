@@ -1,5 +1,4 @@
 import { ExternalLink, Pencil, Trash2 } from 'lucide-react'
-import { type Bookmark, useDetachTag } from '@/features/bookmarks/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { type Bookmark, useDetachTag } from '@/features/bookmarks/api'
 import { BookmarkTagsPopover } from './bookmark-tags-popover'
 
 type BookmarksTableProps = {
@@ -18,7 +18,11 @@ type BookmarksTableProps = {
   onDelete: (bookmark: Bookmark) => void
 }
 
-export function BookmarksTable({ data, onEdit, onDelete }: BookmarksTableProps) {
+export function BookmarksTable({
+  data,
+  onEdit,
+  onDelete,
+}: BookmarksTableProps) {
   const detachTag = useDetachTag()
 
   if (data.length === 0) {

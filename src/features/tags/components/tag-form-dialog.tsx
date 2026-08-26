@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { type Tag, useCreateTag, useUpdateTag } from '@/features/tags/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { type Tag, useCreateTag, useUpdateTag } from '@/features/tags/api'
 
 type TagFormDialogProps = {
   open: boolean

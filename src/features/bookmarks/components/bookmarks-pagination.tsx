@@ -1,5 +1,5 @@
-import { type BookmarkListMeta } from '@/features/bookmarks/api'
 import { Button } from '@/components/ui/button'
+import { type BookmarkListMeta } from '@/features/bookmarks/api'
 
 type BookmarksPaginationProps = {
   meta: BookmarkListMeta
@@ -15,8 +15,8 @@ export function BookmarksPagination({
   return (
     <div className='flex items-center justify-between pt-2'>
       <p className='text-muted-foreground text-sm'>
-        {meta.total} bookmark{meta.total === 1 ? '' : 's'} — page {meta.page}{' '}
-        / {meta.totalPages}
+        {meta.total} bookmark{meta.total === 1 ? '' : 's'} — page {meta.page} /{' '}
+        {meta.totalPages}
       </p>
       <div className='flex items-center gap-2'>
         <Button

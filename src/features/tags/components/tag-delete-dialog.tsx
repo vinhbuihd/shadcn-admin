@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
-import { type Tag, useDeleteTag } from '@/features/tags/api'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { type Tag, useDeleteTag } from '@/features/tags/api'
 
 type TagDeleteDialogProps = {
   open: boolean

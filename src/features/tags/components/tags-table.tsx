@@ -1,5 +1,4 @@
 import { Pencil, Trash2 } from 'lucide-react'
-import { type Tag } from '@/features/tags/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { type Tag } from '@/features/tags/api'
 
 type TagsTableProps = {
   data: Tag[]

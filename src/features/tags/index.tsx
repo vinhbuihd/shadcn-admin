@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, Plus } from 'lucide-react'
-import { type Tag, tagsQueryOptions } from '@/features/tags/api'
+import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Button } from '@/components/ui/button'
+import { type Tag, tagsQueryOptions } from '@/features/tags/api'
 import { TagDeleteDialog } from './components/tag-delete-dialog'
 import { TagFormDialog } from './components/tag-form-dialog'
 import { TagsTable } from './components/tags-table'
@@ -63,7 +63,11 @@ export function Tags() {
             <Loader2 className='size-5 animate-spin' />
           </div>
         ) : (
-          <TagsTable data={data ?? []} onEdit={handleEdit} onDelete={handleDelete} />
+          <TagsTable
+            data={data ?? []}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         )}
       </Main>
 
