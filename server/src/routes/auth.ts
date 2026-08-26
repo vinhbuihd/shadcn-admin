@@ -2,6 +2,7 @@ import argon2 from "argon2";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { env } from "../config/env.js";
 import { db } from "../db/index.js";
 import { users } from "../db/schema/users.js";
 import { hasPostgresErrorCode } from "../lib/postgres-errors.js";
@@ -17,6 +18,14 @@ const loginBodySchema = z.object({
     email: z.string().email().toLowerCase(),
     password: z.string().min(8).max(100),
 })
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/',
+}
+
 
 
 export async function authRoutes(app: FastifyInstance) {
@@ -53,13 +62,9 @@ export async function authRoutes(app: FastifyInstance) {
             const token = app.jwt.sign({ userId: user.id }, { expiresIn: '7d' })
 
             // 5. Set cookie và return response
-
             reply.setCookie('auth', token, {
-                httpOnly: true,
-                secure: false, // set true khi có HTTPS
-                sameSite: 'lax',
-                path: '/',
-                maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+                ...cookieOptions,
+                maxAge: 7 * 24 * 60 * 60,
             })
 
             return reply.code(201).send({
@@ -123,12 +128,10 @@ export async function authRoutes(app: FastifyInstance) {
 
             // 6. Set cookie
             reply.setCookie('auth', token, {
-                httpOnly: true,
-                secure: false,
-                sameSite: 'lax',
-                path: '/',
+                ...cookieOptions,
                 maxAge: 7 * 24 * 60 * 60,
             })
+
 
             return reply.code(200).send({
                 message: 'Login successful',
@@ -176,12 +179,8 @@ export async function authRoutes(app: FastifyInstance) {
     })
 
     app.post('/auth/logout', { preHandler: [app.authenticate] }, async (request, reply) => {
-        reply.clearCookie('auth', {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            path: '/',
-        })
+        reply.clearCookie('auth', cookieOptions)
+
 
         return reply.code(200).send({
             message: 'Logout successful',

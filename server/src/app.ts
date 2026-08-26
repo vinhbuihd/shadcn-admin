@@ -1,4 +1,5 @@
 import fastifyCookie from '@fastify/cookie'
+import fastifyCors from '@fastify/cors'
 import '@fastify/jwt'
 import fastifyJwt from '@fastify/jwt'
 import { sql } from 'drizzle-orm'
@@ -13,7 +14,14 @@ import { tagRoutes } from './routes/tags.js'
 export function buildApp() {
     const app = Fastify({
         logger: true,
+        trustProxy: true,
     })
+
+    app.register(fastifyCors, {
+        origin: env.FRONTEND_URL,
+        credentials: true,
+    })
+
 
     app.register(fastifyCookie)
 
