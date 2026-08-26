@@ -1,6 +1,6 @@
 # Lộ trình và tiến độ học Fullstack 2026
 
-> Cập nhật gần nhất: 25/08/2026
+> Cập nhật gần nhất: 26/08/2026
 
 ## 1. Mục tiêu
 
@@ -213,11 +213,21 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-4; chuẩn bị học G
 - [x] Tag management (attach, detach).
 - [x] Loading/error states + invalidate cache.
 
+Đã hoàn thành thêm (Giai đoạn 5 - Production & Deploy, đang làm):
+
+- [x] Docker hóa Fastify API (`server/Dockerfile`).
+- [x] Docker Compose chạy frontend + API + PostgreSQL cho local.
+- [x] Cấu hình CORS (`@fastify/cors`).
+- [x] GitHub Actions: job frontend (lint, format check, build) + job backend (typecheck, build, migrate, test với Postgres service container).
+
 Chưa hoàn thành:
 
-- [ ] Docker hóa toàn bộ ứng dụng.
-- [ ] CI/CD (GitHub Actions).
-- [ ] Deploy production.
+- [ ] Tách cấu hình development, test và production rõ ràng hơn.
+- [ ] Chạy migration an toàn khi deploy (không tự động migrate mỗi lần start container production).
+- [ ] HTTPS và trusted proxy khi deploy thật.
+- [ ] Deploy database và backend.
+- [ ] Deploy frontend.
+- [ ] Cấu hình logging và health check production.
 - [ ] Hoàn thiện test CRUD bookmark, ownership, cascade.
 - [ ] Mở rộng features (share, full-text search, Redis).
 
@@ -283,12 +293,12 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 
 ### Giai đoạn 5: Production và deploy
 
-- [ ] Docker hóa Fastify API.
-- [ ] Chạy frontend, API và PostgreSQL bằng Compose cho local.
+- [x] Docker hóa Fastify API.
+- [x] Chạy frontend, API và PostgreSQL bằng Compose cho local.
 - [ ] Tách cấu hình development, test và production.
 - [ ] Chạy migration an toàn khi deploy.
-- [ ] Cấu hình CORS, cookie, HTTPS và trusted proxy.
-- [ ] Thêm GitHub Actions chạy typecheck, build và test.
+- [x] Cấu hình CORS, cookie. (HTTPS/trusted proxy còn lại khi deploy thật)
+- [x] Thêm GitHub Actions chạy typecheck, build và test.
 - [ ] Deploy database và backend.
 - [ ] Deploy frontend.
 - [ ] Cấu hình logging và health check production.
