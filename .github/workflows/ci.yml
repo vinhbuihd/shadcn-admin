@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
 
       - name: Install dependencies
@@ -45,7 +45,7 @@ jobs:
     defaults:
       run:
         working-directory: server
-    container: node:20-bookworm-slim
+    container: node:22-bookworm-slim
 
     # Env shared by every step below (migrate + test both need DB access)
     env:
