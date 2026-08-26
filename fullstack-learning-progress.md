@@ -157,7 +157,7 @@ x-user-id: <UUID>
 
 ## 4. Trạng thái hiện tại
 
-Giai đoạn hiện tại: **hoàn thành Authentication; chuẩn bị học Giai đoạn 2 (hoàn thiện Bookmark và Tag)**.
+Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-4; chuẩn bị học Giai đoạn 5 (Production & Deploy)**.
 
 Đã hoàn thành:
 
@@ -172,29 +172,54 @@ Giai đoạn hiện tại: **hoàn thành Authentication; chuẩn bị học Gia
 - [x] Health check cho API và database.
 - [x] CRUD Tag.
 - [x] CRUD Bookmark cơ bản.
-- [x] Kiểm tra TypeScript và build backend thành công.
 
 Đã hoàn thành thêm (Giai đoạn 1 - Authentication):
 
 - [x] Cài Argon2, Fastify JWT và Fastify Cookie.
-- [x] `POST /api/auth/register` — hash password bằng Argon2, tạo user, tự động đăng nhập.
-- [x] `POST /api/auth/login` — verify password, không tiết lộ email tồn tại hay không qua message.
-- [x] JWT lưu trong `HttpOnly` cookie, `path: '/'` (cookie mặc định scope theo path của request nếu không set, dễ gây bug 401 ở route khác).
-- [x] Authentication middleware `app.authenticate` dùng `preHandler`.
-- [x] `GET /api/auth/me`.
-- [x] `POST /api/auth/logout`.
-- [x] Thay `x-user-id` bằng `request.user.userId` trong Tag và Bookmark API.
-- [x] Module augmentation cho `FastifyInstance.authenticate` và `FastifyJWT` (`src/types/fastify.d.ts`).
+- [x] `POST /api/auth/register` — hash password, tạo user, tự động đăng nhập.
+- [x] `POST /api/auth/login` — verify password, không tiết lộ email.
+- [x] JWT lưu trong `HttpOnly` cookie, `path: '/'`.
+- [x] Authentication middleware `app.authenticate`.
+- [x] `GET /api/auth/me` và `POST /api/auth/logout`.
+- [x] Thay `x-user-id` bằng `request.user.userId`.
+- [x] Module augmentation cho Fastify + JWT types.
+
+Đã hoàn thành thêm (Giai đoạn 2 - Hoàn thiện Bookmark & Tag):
+
+- [x] `PUT /api/bookmarks/:bookmarkId/tags/:tagId` để gắn tag (dùng transaction).
+- [x] `DELETE /api/bookmarks/:bookmarkId/tags/:tagId` để gỡ tag (dùng subquery).
+- [x] Trả bookmark kèm danh sách tag (2 SELECT + JS map).
+- [x] Search không phân biệt hoa thường (title, note).
+- [x] Lọc theo tag (`EXISTS` subquery).
+- [x] Sắp xếp theo `createdAt DESC`.
+- [x] Phân trang (`page`, `pageSize`, metadata `total`, `totalPages`).
+- [x] EXPLAIN ANALYZE — không cần thêm index (Postgres tối ưu đúng).
+
+Đã hoàn thành thêm (Giai đoạn 3 - Testing):
+
+- [x] Cài và cấu hình Vitest.
+- [x] Test `/health` endpoint.
+- [x] Tạo database test riêng (`bookmark_manager_test`).
+- [x] Test register/login (valid, invalid, duplicate email, wrong password).
+- [x] Test security: không tiết lộ email exists vs sai password.
+- [x] Setup cleanup dữ liệu giữa test (beforeEach).
+
+Đã hoàn thành thêm (Giai đoạn 4 - Kết nối Frontend):
+
+- [x] Axios client + cookie config.
+- [x] React Query hooks (auth, bookmark, tag).
+- [x] Frontend auth flow (register, login, logout).
+- [x] Bookmark UI (CRUD, search, filter, pagination).
+- [x] Tag management (attach, detach).
+- [x] Loading/error states + invalidate cache.
 
 Chưa hoàn thành:
 
-- [ ] Gắn và gỡ tag cho bookmark.
-- [ ] Trả bookmark kèm danh sách tag.
-- [ ] Search, filter và pagination.
-- [ ] Automated testing.
-- [ ] Kết nối frontend với API.
 - [ ] Docker hóa toàn bộ ứng dụng.
-- [ ] CI/CD và deploy.
+- [ ] CI/CD (GitHub Actions).
+- [ ] Deploy production.
+- [ ] Hoàn thiện test CRUD bookmark, ownership, cascade.
+- [ ] Mở rộng features (share, full-text search, Redis).
 
 ## 5. Lộ trình tiếp theo
 
@@ -279,7 +304,7 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 
 ## 6. Bước học kế tiếp
 
-Chủ đề tiếp theo: **Giai đoạn 2 — Hoàn thiện Bookmark và Tag** (gắn/gỡ tag cho bookmark, transaction, trả bookmark kèm tag, search, filter, sort, pagination).
+Chủ đề tiếp theo: **Giai đoạn 5 — Production & Deploy** (Docker, compose, CI/CD, deploy backend/frontend).
 
 Nguyên tắc bảo mật đang giữ:
 
