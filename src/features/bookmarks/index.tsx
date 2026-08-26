@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
 import { Loader2, Plus } from 'lucide-react'
 import { type Bookmark, bookmarksQueryOptions } from '@/features/bookmarks/api'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -11,10 +12,26 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { BookmarkDeleteDialog } from './components/bookmark-delete-dialog'
 import { BookmarkFormDialog } from './components/bookmark-form-dialog'
+import { BookmarksPagination } from './components/bookmarks-pagination'
 import { BookmarksTable } from './components/bookmarks-table'
+import { BookmarksToolbar } from './components/bookmarks-toolbar'
+
+const routeApi = getRouteApi('/_authenticated/bookmarks/')
 
 export function Bookmarks() {
-  const { data, isPending } = useQuery(bookmarksQueryOptions())
+  const search = routeApi.useSearch()
+  const navigate = routeApi.useNavigate()
+
+  const { data, isPending, isPlaceholderData } = useQuery({
+    ...bookmarksQueryOptions({
+      search: search.search,
+      tagId: search.tagId,
+      page: search.page,
+      pageSize: search.pageSize,
+    }),
+    placeholderData: keepPreviousData,
+  })
+
   const [formOpen, setFormOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [currentRow, setCurrentRow] = useState<Bookmark | undefined>()
@@ -58,15 +75,47 @@ export function Bookmarks() {
           </Button>
         </div>
 
-        {isPending ? (
-          <div className='text-muted-foreground flex h-32 items-center justify-center'>
-            <Loader2 className='size-5 animate-spin' />
-          </div>
-        ) : (
-          <BookmarksTable
-            data={data ?? []}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+        <BookmarksToolbar
+          search={search.search ?? ''}
+          tagId={search.tagId}
+          onSearchChange={(value) =>
+            navigate({
+              search: (prev) => ({
+                ...prev,
+                search: value || undefined,
+                page: undefined,
+              }),
+            })
+          }
+          onTagIdChange={(value) =>
+            navigate({
+              search: (prev) => ({ ...prev, tagId: value, page: undefined }),
+            })
+          }
+        />
+
+        <div className='mt-4'>
+          {isPending ? (
+            <div className='text-muted-foreground flex h-32 items-center justify-center'>
+              <Loader2 className='size-5 animate-spin' />
+            </div>
+          ) : (
+            <div className={isPlaceholderData ? 'opacity-60' : undefined}>
+              <BookmarksTable
+                data={data?.data ?? []}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </div>
+          )}
+        </div>
+
+        {data?.meta && (
+          <BookmarksPagination
+            meta={data.meta}
+            onPageChange={(page) =>
+              navigate({ search: (prev) => ({ ...prev, page }) })
+            }
           />
         )}
       </Main>

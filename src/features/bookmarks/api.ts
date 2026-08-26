@@ -22,8 +22,16 @@ interface BookmarkResponse {
   data: Bookmark
 }
 
+export interface BookmarkListMeta {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
 interface BookmarkListResponse {
   data: Bookmark[]
+  meta: BookmarkListMeta
 }
 
 export interface BookmarkInput {
@@ -34,9 +42,18 @@ export interface BookmarkInput {
 
 export type BookmarkUpdateInput = Partial<BookmarkInput>
 
-async function fetchBookmarks() {
-  const response = await apiClient.get<BookmarkListResponse>('/bookmarks')
-  return response.data.data
+export interface BookmarkListParams {
+  search?: string
+  tagId?: string
+  page?: number
+  pageSize?: number
+}
+
+async function fetchBookmarks(params: BookmarkListParams) {
+  const response = await apiClient.get<BookmarkListResponse>('/bookmarks', {
+    params,
+  })
+  return response.data
 }
 
 async function createBookmark(input: BookmarkInput) {
@@ -79,10 +96,10 @@ async function detachTag({
   await apiClient.delete(`/bookmarks/${bookmarkId}/tags/${tagId}`)
 }
 
-export const bookmarksQueryOptions = () =>
+export const bookmarksQueryOptions = (params: BookmarkListParams = {}) =>
   queryOptions({
-    queryKey: ['bookmarks'],
-    queryFn: fetchBookmarks,
+    queryKey: ['bookmarks', params],
+    queryFn: () => fetchBookmarks(params),
   })
 
 export function useCreateBookmark() {

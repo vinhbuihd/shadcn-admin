@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, exists, ilike, inArray, or, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { db } from '../db/index.js'
@@ -37,6 +37,14 @@ const bookmarkSelection = {
   createdAt: bookmarks.createdAt,
   updatedAt: bookmarks.updatedAt,
 }
+
+const listBookmarksQuerySchema = z.object({
+  search: z.string().trim().min(1).optional(),
+  tagId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+})
+
 
 class NotFoundError extends Error { }
 
@@ -92,15 +100,83 @@ export async function bookmarkRoutes(app: FastifyInstance) {
   app.get('/bookmarks', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.userId
 
+    const conditions = [eq(bookmarks.userId, userId)]
+
+    const queryResult = listBookmarksQuerySchema.safeParse(request.query)
+    if (!queryResult.success) {
+      return reply.code(400).send({
+        message: 'Invalid query parameters',
+      })
+    }
+
+    const { search, tagId, page, pageSize } = queryResult.data
+    if (search) {
+      const searchCondition = or(
+        ilike(bookmarks.title, `%${search}%`),
+        ilike(bookmarks.note, `%${search}%`)
+      )
+
+      if (searchCondition) {
+        conditions.push(searchCondition)
+      }
+    }
+
+    if (tagId) {
+      conditions.push(exists(db.select({ id: bookmarkTags.bookmarkId }).from(bookmarkTags).where(
+        and(
+          eq(bookmarkTags.bookmarkId, bookmarks.id),
+          eq(bookmarkTags.tagId, tagId)
+        )
+      )))
+    }
+
+    const offset = (page - 1) * pageSize
+
     try {
       const userBookmarks = await db
         .select(bookmarkSelection)
         .from(bookmarks)
-        .where(eq(bookmarks.userId, userId))
+        .where(and(...conditions))
         .orderBy(desc(bookmarks.createdAt))
+        .limit(pageSize).offset(offset)
+
+      const bookmarkIds = userBookmarks.map(b => b.id)
+
+      // Lấy các bookmarkTags mà bookmarkId nằm trong bookmarkIds sau đó join với tags để lấy thông tin tag (name)
+      const bookmarkTagsWithTagInfo = await db.select({
+        bookmarkId: bookmarkTags.bookmarkId,
+        tagId: bookmarkTags.tagId,
+        tagName: tags.name
+      }).from(bookmarkTags).innerJoin(tags, eq(bookmarkTags.tagId, tags.id)).where(inArray(bookmarkTags.bookmarkId, bookmarkIds))
+
+
+      // Tạo một map từ bookmarkId đến danh sách tags
+      const tagsByBookmarkId = new Map()
+
+      for (const row of bookmarkTagsWithTagInfo) {
+        if (!tagsByBookmarkId.has(row.bookmarkId)) {
+          tagsByBookmarkId.set(row.bookmarkId, [])
+        }
+        tagsByBookmarkId.get(row.bookmarkId)!.push({
+          id: row.tagId,
+          name: row.tagName
+        })
+      }
+
+      const data = userBookmarks.map((b) => ({
+        ...b,
+        tags: tagsByBookmarkId.get(b.id) ?? [],
+      }))
+
+      const [countRows] = await db.select({ count: sql<number>`count(*)::int` }).from(bookmarks).where(and(...conditions))
+
+      const total = countRows?.count ?? 0
 
       return {
-        data: userBookmarks,
+        data,
+        meta: {
+          page, pageSize, total, totalPages: Math.ceil(total / pageSize)
+        }
       }
     } catch (error) {
       request.log.error(error)
