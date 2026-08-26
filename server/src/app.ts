@@ -1,9 +1,8 @@
 import fastifyCookie from '@fastify/cookie'
 import fastifyCors from '@fastify/cors'
-import '@fastify/jwt'
 import fastifyJwt from '@fastify/jwt'
 import { sql } from 'drizzle-orm'
-import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
 import { env } from './config/env.js'
 import { db, pool } from './db/index.js'
 import { authRoutes } from './routes/auth.js'
@@ -36,7 +35,7 @@ export function buildApp() {
     app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             await request.jwtVerify()
-        } catch (error) {
+        } catch (_error) {
             return reply.code(401).send({
                 message: 'Unauthorized',
             })

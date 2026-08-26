@@ -178,7 +178,7 @@ export async function authRoutes(app: FastifyInstance) {
         }
     })
 
-    app.post('/auth/logout', { preHandler: [app.authenticate] }, async (request, reply) => {
+    app.post('/auth/logout', { preHandler: [app.authenticate] }, async (_request, reply) => {
         reply.clearCookie('auth', cookieOptions)
 
 
