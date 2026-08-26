@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: bookmark_postgres
+    environment:
+      POSTGRES_USER: bookmark_app
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_DB: bookmark_app
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookmark_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: bookmark_api
+    environment:
+      DATABASE_URL: postgresql://bookmark_app:local_password@postgres:5432/bookmark_app
+      PORT: 3043
+      HOST: 0.0.0.0
+      JWT_SECRET: JWT_SECRET-my-secret-key-123456789101112
+    ports:
+      - "3043:3043"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "node dist/server.js"
+
+  # Frontend
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: bookmark_web
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3043
+    depends_on:
+      - api
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+
+volumes:
+  postgres_data:
