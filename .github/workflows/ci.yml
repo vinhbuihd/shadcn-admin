@@ -37,3 +37,43 @@ jobs:
 
       - name: Build the project
         run: yarn build
+
+
+  container-job:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+    container: node:20-bookworm-slim
+
+    # Env shared by every step below (migrate + test both need DB access)
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      JWT_SECRET: ci-test-secret-key-at-least-32-characters-long
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run database migrations
+        run: yarn db:migrate
+
+      - name: Run tests
+        run: yarn test
