@@ -4,6 +4,7 @@ import fastifyJwt from '@fastify/jwt'
 import { sql } from 'drizzle-orm'
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
 import { env } from './config/env.js'
+import { loggerConfig } from './config/logger.js'
 import { db, pool } from './db/index.js'
 import { authRoutes } from './routes/auth.js'
 import { bookmarkRoutes } from './routes/bookmarks.js'
@@ -12,7 +13,7 @@ import { tagRoutes } from './routes/tags.js'
 
 export function buildApp() {
     const app = Fastify({
-        logger: true,
+        logger: loggerConfig,
         trustProxy: true,
     })
 

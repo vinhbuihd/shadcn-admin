@@ -157,7 +157,7 @@ x-user-id: <UUID>
 
 ## 4. Trạng thái hiện tại
 
-Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-4; chuẩn bị học Giai đoạn 5 (Production & Deploy)**.
+Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-5 (Production & Deploy); app đã chạy thật trên Neon + Render + Vercel**.
 
 Đã hoàn thành:
 
@@ -213,21 +213,22 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-4; chuẩn bị học G
 - [x] Tag management (attach, detach).
 - [x] Loading/error states + invalidate cache.
 
-Đã hoàn thành thêm (Giai đoạn 5 - Production & Deploy, đang làm):
+Đã hoàn thành thêm (Giai đoạn 5 - Production & Deploy):
 
 - [x] Docker hóa Fastify API (`server/Dockerfile`).
 - [x] Docker Compose chạy frontend + API + PostgreSQL cho local.
 - [x] Cấu hình CORS (`@fastify/cors`).
 - [x] GitHub Actions: job frontend (lint, format check, build) + job backend (typecheck, build, migrate, test với Postgres service container).
+- [x] Deploy database: Neon (Postgres 17), migration chạy thành công.
+- [x] Deploy backend: Render (Docker, root directory `server/`), `/health` và `/health/db` xác nhận kết nối Neon ok.
+- [x] Deploy frontend: Vercel, dùng `vercel.json` rewrite `/api/*` sang Render — tránh luôn vấn đề cookie `sameSite: 'lax'` bị chặn cross-site vì browser chỉ thấy same-origin.
+- [x] Full flow đăng ký/đăng nhập/tạo bookmark test ok trên production thật.
 
 Chưa hoàn thành:
 
-- [ ] Tách cấu hình development, test và production rõ ràng hơn.
-- [ ] Chạy migration an toàn khi deploy (không tự động migrate mỗi lần start container production).
-- [ ] HTTPS và trusted proxy khi deploy thật.
-- [ ] Deploy database và backend.
-- [ ] Deploy frontend.
-- [ ] Cấu hình logging và health check production.
+- [ ] Tách cấu hình development, test và production rõ ràng hơn (hiện chỉ dựa vào `NODE_ENV`).
+- [ ] Chạy migration an toàn khi deploy (hiện đang migrate thủ công 1 lần từ local, chưa có quy trình migrate khi có schema change mới sau này).
+- [ ] Cấu hình logging và health check production kỹ hơn (health check endpoint đã có và đang dùng, nhưng chưa có structured logging/alerting).
 - [ ] Hoàn thiện test CRUD bookmark, ownership, cascade.
 - [ ] Mở rộng features (share, full-text search, Redis).
 
@@ -297,11 +298,11 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 - [x] Chạy frontend, API và PostgreSQL bằng Compose cho local.
 - [ ] Tách cấu hình development, test và production.
 - [ ] Chạy migration an toàn khi deploy.
-- [x] Cấu hình CORS, cookie. (HTTPS/trusted proxy còn lại khi deploy thật)
+- [x] Cấu hình CORS, cookie, HTTPS và trusted proxy.
 - [x] Thêm GitHub Actions chạy typecheck, build và test.
-- [ ] Deploy database và backend.
-- [ ] Deploy frontend.
-- [ ] Cấu hình logging và health check production.
+- [x] Deploy database và backend.
+- [x] Deploy frontend.
+- [ ] Cấu hình logging và health check production kỹ hơn.
 
 ### Giai đoạn 6: Mở rộng sau MVP
 
@@ -314,7 +315,7 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 
 ## 6. Bước học kế tiếp
 
-Chủ đề tiếp theo: **Giai đoạn 5 — Production & Deploy** (Docker, compose, CI/CD, deploy backend/frontend).
+Chủ đề tiếp theo: **Giai đoạn 6 — Mở rộng sau MVP** (share bookmark, full-text search, rate limiting/audit log, theo dõi hiệu năng production), hoặc hoàn thiện nốt phần còn thiếu của Giai đoạn 5 (tách config dev/test/prod, quy trình migrate an toàn khi có schema thay đổi, structured logging).
 
 Nguyên tắc bảo mật đang giữ:
 
