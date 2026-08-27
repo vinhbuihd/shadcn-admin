@@ -49,7 +49,11 @@ const queryClient = new QueryClient({
     },
   },
   queryCache: new QueryCache({
-    onError: (error) => {
+    onError: (error, query) => {
+      // The `/_authenticated` route guard already redirects to sign-in when
+      // the current user cannot be resolved — don't fight it from here.
+      if (query.queryKey[0] === 'auth') return
+
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
           toast.error('Session expired!')
