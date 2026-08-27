@@ -223,12 +223,11 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-5 (Production & Deploy)
 - [x] Deploy backend: Render (Docker, root directory `server/`), `/health` và `/health/db` xác nhận kết nối Neon ok.
 - [x] Deploy frontend: Vercel, dùng `vercel.json` rewrite `/api/*` sang Render — tránh luôn vấn đề cookie `sameSite: 'lax'` bị chặn cross-site vì browser chỉ thấy same-origin.
 - [x] Full flow đăng ký/đăng nhập/tạo bookmark test ok trên production thật.
+- [x] Tách logger theo môi trường (`server/src/config/logger.ts`): `development` dùng `pino-pretty`, `test` tắt hẳn, `production` JSON level `info`.
 
 Chưa hoàn thành:
 
-- [ ] Tách cấu hình development, test và production rõ ràng hơn (hiện chỉ dựa vào `NODE_ENV`).
-- [ ] Chạy migration an toàn khi deploy (hiện đang migrate thủ công 1 lần từ local, chưa có quy trình migrate khi có schema change mới sau này).
-- [ ] Cấu hình logging và health check production kỹ hơn (health check endpoint đã có và đang dùng, nhưng chưa có structured logging/alerting).
+- [ ] Chạy migration an toàn khi deploy (hiện đang migrate thủ công 1 lần từ local, chưa có quy trình migrate khi có schema change mới sau này) — dự định dùng Render Pre-Deploy Command.
 - [ ] Hoàn thiện test CRUD bookmark, ownership, cascade.
 - [ ] Mở rộng features (share, full-text search, Redis).
 

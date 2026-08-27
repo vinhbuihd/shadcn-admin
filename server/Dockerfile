@@ -23,17 +23,18 @@ WORKDIR /app
 # Copy package files
 COPY package.json yarn.lock ./
 
-# Install ONLY production dependencies
-RUN yarn install --production
+# Install dependencies (giữ luôn devDependencies vì cần drizzle-kit để migrate lúc start)
+RUN yarn install
 
 # Copy compiled JavaScript từ stage 1
 COPY --from=builder /app/dist ./dist
 
-# Copy drizzle migrations
+# Copy drizzle migrations + config (drizzle-kit cần drizzle.config.ts để biết migrations folder)
 COPY drizzle ./drizzle
+COPY drizzle.config.ts ./
 
 # Expose port (thông báo container dùng port này, không binding tự động)
 EXPOSE 3043
 
-# Chạy app
-CMD ["node", "dist/server.js"]
+# Chạy migration trước, an toàn vì idempotent, rồi mới start app
+CMD ["sh", "-c", "yarn db:migrate && node dist/server.js"]
