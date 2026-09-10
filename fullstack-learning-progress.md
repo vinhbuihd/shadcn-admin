@@ -330,8 +330,8 @@ Củng cố nền trước, mở rộng feature sau. Thứ tự:
 
 1. ~~Tách database test~~ — xong.
 2. ~~Test ownership và cascade~~ — xong, 31/31 xanh.
-3. Rate limit `POST /api/auth/login` bằng `@fastify/rate-limit`. App đang public trên internet nên đây là bảo mật cơ bản, không phải "mở rộng".
-4. `setErrorHandler` toàn cục: gom ~10 khối `try/catch` giống nhau, tách lỗi nghiệp vụ khỏi lỗi hệ thống, trả lỗi validation có nói rõ field sai thay vì `"Invalid request"`.
+3. ~~Rate limit `/auth/login` và `/auth/register`~~ — xong, `@fastify/rate-limit@11`, mặc định 10 request/15 phút theo IP, cấu hình qua `AUTH_RATE_LIMIT_MAX` và `AUTH_RATE_LIMIT_WINDOW`.
+4. ~~`setErrorHandler` toàn cục~~ — xong. Toàn bộ `try/catch` trong route biến mất (routes gọn đi 248 dòng), lỗi validation trả kèm field sai.
 5. Feature tiếp theo nên là **tự động lấy title/favicon/og:image từ URL**, không phải share link — nó ép học gọi HTTP ra ngoài có timeout, chống SSRF, background job, và xử lý trạng thái trung gian ở frontend.
 
 Sau đó mới tới Giai đoạn 6: full-text search (seed 100k dòng rồi `EXPLAIN` để thấy `ILIKE '%...%'` không dùng được index), refresh token / thu hồi token, và theo dõi lỗi production.
@@ -365,3 +365,19 @@ Nguyên tắc bảo mật đang giữ:
 - Assert status code là chưa đủ. Route viết sai vẫn có thể ghi đè dữ liệu rồi mới trả 404, nên mỗi test ownership phải kiểm tra thêm trạng thái thật trong database.
 - Cascade là hành vi của Postgres, không phải của API, nên assert ở tầng database. Điều đáng kiểm tra nhất là cascade **dừng đúng chỗ**: xoá tag không được kéo theo bookmark, và ngược lại.
 - Vitest chạy các file test song song theo mặc định. Nhiều file cùng ghi vào một database test và cùng `resetDb()` sẽ xoá dữ liệu của nhau, gây test đỏ ngẫu nhiên rất khó truy. Đã đặt `fileParallelism: false`; cách khác là cấp cho mỗi file một database riêng.
+
+### Bài học rút ra từ rate limit
+
+- `global: false` rồi khai báo `config.rateLimit` ở từng route: chỉ chặn `/auth/login` và `/auth/register` — hai cửa duy nhất mở cho người chưa xác thực. Mỗi route có bộ đếm riêng nên đăng nhập bị chặn không kéo theo đăng ký.
+- Bộ đếm theo `request.ip`, và nhờ `trustProxy: true` thì đó là IP thật lấy từ `X-Forwarded-For`. Nếu đếm nhầm theo IP của proxy Vercel/Render thì một kẻ tấn công sẽ khoá toàn bộ người dùng.
+- Store nằm trong bộ nhớ tiến trình, đúng với hiện tại (Render free, một instance). Từ hai instance trở lên thì mỗi instance đếm riêng, ngưỡng thực tế nhân đôi — đó mới là lý do thật sự cần một store dùng chung như Redis, chứ không phải vì "cache cho nhanh".
+- Ngưỡng thật sẽ chặn chính test suite (`ownership.test.ts` gọi `/auth/register` 28 lần từ một IP), nên test đặt `AUTH_RATE_LIMIT_MAX=1000`, còn `buildApp()` nhận `authRateLimit` qua tham số để riêng `rate-limit.test.ts` truyền ngưỡng thấp. Nguyên tắc: config nào cần đổi lúc test thì phải truyền vào được, đừng đọc thẳng từ env trong hàm.
+- Giới hạn theo IP không chặn được tấn công phân tán từ nhiều IP, và ngược lại có thể khoá nhầm cả văn phòng dùng chung một IP NAT. Muốn chặt hơn thì đếm thêm theo email, hoặc chỉ đếm lần đăng nhập thất bại.
+
+### Bài học rút ra từ error handler toàn cục
+
+- Tách **lỗi nghiệp vụ** khỏi **lỗi hệ thống**. Lỗi nghiệp vụ là thứ route chủ động ném ra và biết chính xác client cần thấy gì (`NotFoundError`, `ConflictError`, `UnauthorizedError` — mỗi lớp mang sẵn `statusCode`). Lỗi hệ thống là mất kết nối DB, bug: không có `statusCode`, rơi xuống nhánh 500, ghi log đầy đủ nhưng không lộ chi tiết ra ngoài.
+- Lỗi Postgres nằm trong chuỗi `cause` vì Drizzle bọc lại, nên phải đi dọc chuỗi đó mới lấy được `error.constraint`. Có tên constraint rồi thì một bảng ánh xạ duy nhất xử lý được mọi vi phạm unique, thay vì mỗi route tự đoán "23505 ở đây chắc là trùng email".
+- Error handler phải cho qua các lỗi đã có sẵn `statusCode` do Fastify hoặc plugin sinh ra (429 của rate limit, 400 khi JSON hỏng, 415 sai content-type). Quên nhánh này thì mọi lỗi của plugin biến thành 500.
+- Bẫy đã dính: `@fastify/rate-limit` **throw** chính object mà `errorResponseBuilder` trả về, và Fastify lấy status từ `error.statusCode`. Builder tự viết trả `{ message }` thiếu `statusCode` nên 429 sẽ thành 500. Bỏ builder tự viết, để plugin dùng `Error` mặc định, còn định dạng body do error handler lo.
+- `safeParse` trả lỗi kèm `issues`, mỗi issue có `path` và `message` — đủ để client biết field nào sai. Trước đây mọi route đều trả `{ message: 'Invalid request' }`: đúng status code nhưng người dùng không biết sửa gì.

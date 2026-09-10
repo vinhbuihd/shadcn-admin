@@ -16,6 +16,10 @@ export default defineConfig({
 
         env: {
             NODE_ENV: 'test',
+            // Ngưỡng thật (10 request/15 phút) sẽ chặn chính test suite: riêng
+            // ownership.test.ts đã gọi /auth/register 28 lần từ cùng một IP.
+            // File rate-limit.test.ts tự truyền ngưỡng thấp qua buildApp() để kiểm chứng.
+            AUTH_RATE_LIMIT_MAX: '1000',
         },
     },
 })

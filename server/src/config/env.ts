@@ -11,6 +11,10 @@ const envSchema = z.object({
 
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+
+    // Ngưỡng cho /auth/login và /auth/register, tính theo IP.
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+    AUTH_RATE_LIMIT_WINDOW: z.string().min(1).default('15 minutes'),
 })
 
 export const env = envSchema.parse(process.env)
