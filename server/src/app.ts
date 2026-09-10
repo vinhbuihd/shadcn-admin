@@ -102,6 +102,28 @@ export function buildApp(options: BuildAppOptions = {}) {
         return { status: 'ok' }
     })
 
+    /**
+     * TẠM THỜI — dùng để đếm xem có bao nhiêu proxy đứng trước app trên production,
+     * rồi thay `trustProxy: true` bằng đúng con số đó. Xoá sau khi đo xong.
+     *
+     * Phải đặt dưới prefix /api vì đó là đường mà request thật đi qua
+     * (browser → Vercel rewrite → Render). Gọi thẳng Render sẽ ra chuỗi proxy khác.
+     */
+    app.get('/api/health/ip', async (request) => {
+        const forwardedFor = request.headers['x-forwarded-for']
+        const entries =
+            typeof forwardedFor === 'string'
+                ? forwardedFor.split(',').map((entry) => entry.trim())
+                : []
+
+        return {
+            ip: request.ip,
+            forwardedFor: forwardedFor ?? null,
+            hops: entries.length,
+            entries,
+        }
+    })
+
     // GET /health/db
     app.get("/health/db", async (_request, reply) => {
         try {
