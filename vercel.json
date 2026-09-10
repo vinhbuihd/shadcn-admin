@@ -3,6 +3,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://shadcn-admin-kefb.onrender.com/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
