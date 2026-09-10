@@ -1,6 +1,6 @@
 # Lộ trình và tiến độ học Fullstack 2026
 
-> Cập nhật gần nhất: 26/08/2026
+> Cập nhật gần nhất: 10/09/2026
 
 ## 1. Mục tiêu
 
@@ -239,7 +239,8 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-5 (Production & Deploy)
 
 Chưa hoàn thành:
 
-- [ ] Hoàn thiện test CRUD bookmark, ownership, cascade — đã viết `ownership.test.ts` (14 case) và `cascade.test.ts` (4 case), **chưa chạy được lần nào**, cần chạy `yarn test:run` trên máy có database để xác nhận.
+- [x] Test ownership và cascade: `ownership.test.ts` (14 case) + `cascade.test.ts` (4 case). Toàn bộ 31 test xanh ngày 10/09/2026.
+- [ ] Test happy path còn thiếu: CRUD bookmark, search, filter, pagination.
 - [ ] Mở rộng features (share, full-text search, Redis).
 
 ## 5. Lộ trình tiếp theo
@@ -328,7 +329,7 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 Củng cố nền trước, mở rộng feature sau. Thứ tự:
 
 1. ~~Tách database test~~ — xong.
-2. ~~Test ownership và cascade~~ — đã viết, chờ chạy xác nhận trên máy có database.
+2. ~~Test ownership và cascade~~ — xong, 31/31 xanh.
 3. Rate limit `POST /api/auth/login` bằng `@fastify/rate-limit`. App đang public trên internet nên đây là bảo mật cơ bản, không phải "mở rộng".
 4. `setErrorHandler` toàn cục: gom ~10 khối `try/catch` giống nhau, tách lỗi nghiệp vụ khỏi lỗi hệ thống, trả lỗi validation có nói rõ field sai thay vì `"Invalid request"`.
 5. Feature tiếp theo nên là **tự động lấy title/favicon/og:image từ URL**, không phải share link — nó ép học gọi HTTP ra ngoài có timeout, chống SSRF, background job, và xử lý trạng thái trung gian ở frontend.
