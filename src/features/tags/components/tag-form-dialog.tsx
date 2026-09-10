@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { applyServerErrors } from '@/lib/server-errors'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -57,6 +58,8 @@ export function TagFormDialog({
             toast.success('Tag updated successfully!')
             onOpenChange(false)
           },
+          onError: (error) =>
+            applyServerErrors(error, form, { conflictField: 'name' }),
         }
       )
       return
@@ -68,6 +71,8 @@ export function TagFormDialog({
         form.reset({ name: '' })
         onOpenChange(false)
       },
+      onError: (error) =>
+        applyServerErrors(error, form, { conflictField: 'name' }),
     })
   }
 

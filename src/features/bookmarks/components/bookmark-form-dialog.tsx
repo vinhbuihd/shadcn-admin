@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { applyServerErrors } from '@/lib/server-errors'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -70,6 +71,8 @@ export function BookmarkFormDialog({
             toast.success('Bookmark updated successfully!')
             onOpenChange(false)
           },
+          onError: (error) =>
+            applyServerErrors(error, form, { conflictField: 'url' }),
         }
       )
       return
@@ -81,6 +84,8 @@ export function BookmarkFormDialog({
         form.reset({ title: '', url: '', note: '' })
         onOpenChange(false)
       },
+      onError: (error) =>
+        applyServerErrors(error, form, { conflictField: 'url' }),
     })
   }
 

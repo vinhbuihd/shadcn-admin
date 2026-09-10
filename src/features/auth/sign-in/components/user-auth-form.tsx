@@ -6,6 +6,7 @@ import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
 import { useAuthStore } from '@/stores/auth-store'
+import { applyServerErrors } from '@/lib/server-errors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,7 +28,7 @@ const formSchema = z.object({
   password: z
     .string()
     .min(1, 'Please enter your password')
-    .min(7, 'Password must be at least 7 characters long'),
+    .min(8, 'Password must be at least 8 characters long'),
 })
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -58,6 +59,7 @@ export function UserAuthForm({
         toast.success(`Welcome back, ${user.name}!`)
         navigate({ to: redirectTo || '/', replace: true })
       },
+      onError: (error) => applyServerErrors(error, form),
     })
   }
 

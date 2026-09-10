@@ -239,7 +239,8 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-5 (Production & Deploy)
 
 Chưa hoàn thành:
 
-- [x] Test ownership và cascade: `ownership.test.ts` (14 case) + `cascade.test.ts` (4 case). Toàn bộ 31 test xanh ngày 10/09/2026.
+- [x] Test ownership và cascade: `ownership.test.ts` (14 case) + `cascade.test.ts` (4 case).
+- [x] Củng cố chặng A xong ngày 10/09/2026: tách database test, test ownership/cascade, rate limit, error handler toàn cục. Suite hiện có 41 test, toàn bộ xanh.
 - [ ] Test happy path còn thiếu: CRUD bookmark, search, filter, pagination.
 - [ ] Mở rộng features (share, full-text search, Redis).
 
@@ -332,7 +333,8 @@ Củng cố nền trước, mở rộng feature sau. Thứ tự:
 2. ~~Test ownership và cascade~~ — xong, 31/31 xanh.
 3. ~~Rate limit `/auth/login` và `/auth/register`~~ — xong, `@fastify/rate-limit@11`, mặc định 10 request/15 phút theo IP, cấu hình qua `AUTH_RATE_LIMIT_MAX` và `AUTH_RATE_LIMIT_WINDOW`.
 4. ~~`setErrorHandler` toàn cục~~ — xong. Toàn bộ `try/catch` trong route biến mất (routes gọn đi 248 dòng), lỗi validation trả kèm field sai.
-5. Feature tiếp theo nên là **tự động lấy title/favicon/og:image từ URL**, không phải share link — nó ép học gọi HTTP ra ngoài có timeout, chống SSRF, background job, và xử lý trạng thái trung gian ở frontend.
+5. ~~Frontend dùng được lỗi mới từ API~~ — xong: lỗi validation hiện ngay dưới ô nhập, 409 gắn vào đúng field, 429 báo "thử lại sau bao lâu".
+6. Feature tiếp theo nên là **tự động lấy title/favicon/og:image từ URL**, không phải share link — nó ép học gọi HTTP ra ngoài có timeout, chống SSRF, background job, và xử lý trạng thái trung gian ở frontend.
 
 Sau đó mới tới Giai đoạn 6: full-text search (seed 100k dòng rồi `EXPLAIN` để thấy `ILIKE '%...%'` không dùng được index), refresh token / thu hồi token, và theo dõi lỗi production.
 
@@ -381,3 +383,12 @@ Nguyên tắc bảo mật đang giữ:
 - Error handler phải cho qua các lỗi đã có sẵn `statusCode` do Fastify hoặc plugin sinh ra (429 của rate limit, 400 khi JSON hỏng, 415 sai content-type). Quên nhánh này thì mọi lỗi của plugin biến thành 500.
 - Bẫy đã dính: `@fastify/rate-limit` **throw** chính object mà `errorResponseBuilder` trả về, và Fastify lấy status từ `error.statusCode`. Builder tự viết trả `{ message }` thiếu `statusCode` nên 429 sẽ thành 500. Bỏ builder tự viết, để plugin dùng `Error` mặc định, còn định dạng body do error handler lo.
 - `safeParse` trả lỗi kèm `issues`, mỗi issue có `path` và `message` — đủ để client biết field nào sai. Trước đây mọi route đều trả `{ message: 'Invalid request' }`: đúng status code nhưng người dùng không biết sửa gì.
+
+### Bài học rút ra từ việc nối lỗi API vào form
+
+- Đổi API cho tốt hơn mà frontend không dùng tới thì trải nghiệm không đổi. Backend trả `errors: [{ field, message }]` từ việc 4 chỉ có giá trị khi form gọi `setError` để hiện lỗi ngay dưới ô nhập.
+- Server biết **constraint** nào bị vi phạm chứ không biết form có ô nào, nên lỗi 409 không thể tự gắn vào field. Phía form tự chỉ định field nhận lỗi đó (`conflictField`): email cho đăng ký, url cho bookmark, name cho tag.
+- Field server trả về mà form không có thì bỏ qua, không để vỡ. Tên field của API và của form không bắt buộc trùng nhau.
+- Khi lỗi đã hiện dưới ô nhập thì toast không nên lặp lại nội dung, chỉ cần trỏ tới đó (`Please check the highlighted fields.`).
+- Header `retry-after` bị trình duyệt giấu khỏi JavaScript ở kịch bản cross-origin nếu server không khai báo `exposedHeaders`. Hiện production đi qua Vercel rewrite nên là same-origin và không dính, nhưng khai báo sẵn để đổi cách deploy không mất thông tin.
+- Client validate mật khẩu tối thiểu 7 ký tự trong khi server yêu cầu 8: người dùng qua được form rồi mới bị server từ chối. Đã sửa cho khớp — hai bên validate lệch nhau thì lớp nào chặt hơn sẽ luôn là lớp gây khó hiểu.

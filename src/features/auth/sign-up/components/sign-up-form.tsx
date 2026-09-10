@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
 import { useAuthStore } from '@/stores/auth-store'
+import { applyServerErrors } from '@/lib/server-errors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -64,6 +65,9 @@ export function SignUpForm({
           toast.success('Account created successfully!')
           navigate({ to: '/', replace: true })
         },
+        // 409 "Email already exists" hiện ngay dưới ô email thay vì chỉ toast
+        onError: (error) =>
+          applyServerErrors(error, form, { conflictField: 'email' }),
       }
     )
   }

@@ -34,6 +34,9 @@ export function buildApp(options: BuildAppOptions = {}) {
     app.register(fastifyCors, {
         origin: env.FRONTEND_URL,
         credentials: true,
+        // Không khai báo thì trình duyệt giấu header này khỏi JS ở kịch bản
+        // cross-origin, và frontend mất thông tin "chờ bao lâu" khi bị 429.
+        exposedHeaders: ['retry-after'],
     })
 
 
