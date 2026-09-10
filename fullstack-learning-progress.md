@@ -239,7 +239,7 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-5 (Production & Deploy)
 
 Chưa hoàn thành:
 
-- [ ] Hoàn thiện test CRUD bookmark, ownership, cascade.
+- [ ] Hoàn thiện test CRUD bookmark, ownership, cascade — đã viết `ownership.test.ts` (14 case) và `cascade.test.ts` (4 case), **chưa chạy được lần nào**, cần chạy `yarn test:run` trên máy có database để xác nhận.
 - [ ] Mở rộng features (share, full-text search, Redis).
 
 ## 5. Lộ trình tiếp theo
@@ -328,7 +328,7 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 Củng cố nền trước, mở rộng feature sau. Thứ tự:
 
 1. ~~Tách database test~~ — xong.
-2. Test ownership (user A không đọc/sửa/xoá được dữ liệu user B) và test cascade. Đây là test bảo vệ được khi refactor, khác với test validation mà Zod đã lo.
+2. ~~Test ownership và cascade~~ — đã viết, chờ chạy xác nhận trên máy có database.
 3. Rate limit `POST /api/auth/login` bằng `@fastify/rate-limit`. App đang public trên internet nên đây là bảo mật cơ bản, không phải "mở rộng".
 4. `setErrorHandler` toàn cục: gom ~10 khối `try/catch` giống nhau, tách lỗi nghiệp vụ khỏi lỗi hệ thống, trả lỗi validation có nói rõ field sai thay vì `"Invalid request"`.
 5. Feature tiếp theo nên là **tự động lấy title/favicon/og:image từ URL**, không phải share link — nó ép học gọi HTTP ra ngoài có timeout, chống SSRF, background job, và xử lý trạng thái trung gian ở frontend.
@@ -356,3 +356,11 @@ Nguyên tắc bảo mật đang giữ:
 - Fallback âm thầm kiểu `DATABASE_URL_TEST || DATABASE_URL` là cách lỗi đi vào production. Với thao tác phá huỷ dữ liệu, fail cứng tốt hơn đoán.
 - ESM nạp toàn bộ `import` trước khi chạy câu lệnh đầu tiên, nên gán `process.env.NODE_ENV` ở đầu file rồi `import` config tĩnh sẽ không có tác dụng — phải dùng dynamic import. `test.env` của Vitest cũng chỉ áp cho worker, không áp cho `globalSetup`.
 - `dotenv` không ghi đè biến đã có trong `process.env`, nên biến từ shell/CI luôn thắng `.env`. Cũng vì vậy, muốn kiểm thử nhánh "thiếu biến" phải chạy với env file rỗng, không thể chỉ bỏ biến ở shell.
+
+### Bài học rút ra từ test ownership
+
+- `app.inject()` không có cookie jar như browser: phải tự moi cookie `auth` ra khỏi `response.cookies` rồi tự đính vào request sau qua `cookies: { auth: token }`. Vì `register` đã tự đăng nhập luôn nên một request là có cả user lẫn cookie.
+- Truy cập chéo user phải trả **404 chứ không phải 403**: 403 nghĩa là "resource có tồn tại nhưng bạn không được phép", tức đã tiết lộ sự tồn tại của nó.
+- Assert status code là chưa đủ. Route viết sai vẫn có thể ghi đè dữ liệu rồi mới trả 404, nên mỗi test ownership phải kiểm tra thêm trạng thái thật trong database.
+- Cascade là hành vi của Postgres, không phải của API, nên assert ở tầng database. Điều đáng kiểm tra nhất là cascade **dừng đúng chỗ**: xoá tag không được kéo theo bookmark, và ngược lại.
+- Vitest chạy các file test song song theo mặc định. Nhiều file cùng ghi vào một database test và cùng `resetDb()` sẽ xoá dữ liệu của nhau, gây test đỏ ngẫu nhiên rất khó truy. Đã đặt `fileParallelism: false`; cách khác là cấp cho mỗi file một database riêng.
