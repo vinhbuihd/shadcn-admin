@@ -392,3 +392,13 @@ Nguyên tắc bảo mật đang giữ:
 - Khi lỗi đã hiện dưới ô nhập thì toast không nên lặp lại nội dung, chỉ cần trỏ tới đó (`Please check the highlighted fields.`).
 - Header `retry-after` bị trình duyệt giấu khỏi JavaScript ở kịch bản cross-origin nếu server không khai báo `exposedHeaders`. Hiện production đi qua Vercel rewrite nên là same-origin và không dính, nhưng khai báo sẵn để đổi cách deploy không mất thông tin.
 - Client validate mật khẩu tối thiểu 7 ký tự trong khi server yêu cầu 8: người dùng qua được form rồi mới bị server từ chối. Đã sửa cho khớp — hai bên validate lệch nhau thì lớp nào chặt hơn sẽ luôn là lớp gây khó hiểu.
+
+### Bài học rút ra từ việc đo `trustProxy` trên production
+
+Đã đo thật ngày 10/09/2026 bằng một endpoint tạm `/api/health/ip`, thay vì suy đoán:
+
+- **Qua Vercel**, chuỗi luôn là 4 phần tử: `client → Vercel → Cloudflare → Render`. Gửi kèm `X-Forwarded-For: 1.2.3.4` thì Vercel **xoá sạch** header đó và ghi lại chuỗi của chính nó. Nên `request.ip` luôn là IP thật, và `trustProxy: true` là đúng cho đường mà người dùng thật đi qua.
+- **Gọi thẳng URL Render**, chuỗi chỉ có 3 phần tử và header giả được giữ nguyên: `request.ip` trở thành `1.2.3.4` do client tự khai. Rate limit theo IP bị vô hiệu hoàn toàn — đổi header mỗi request là đếm lại từ đầu.
+- Không có giá trị `trustProxy` nào sửa được chuyện này, vì hai đường đi có độ sâu khác nhau (4 và 3) và kẻ tấn công tự quyết số phần tử. Chọn số khớp đường Vercel thì đường trực tiếp vẫn giả mạo được; chọn số khớp đường trực tiếp thì qua Vercel `request.ip` thành IP egress của Vercel, tức mọi người dùng chung một bộ đếm.
+- Cách sửa triệt để là chặn truy cập thẳng vào Render, nhưng Render Free không có firewall/custom domain để làm việc đó.
+- Bài học chung: **đo trước khi sửa**. Suy luận ban đầu ("`trustProxy: true` nên rate limit né được") đúng về cơ chế nhưng sai về thực tế, vì không tính tới việc Vercel tự làm sạch header. Sửa theo suy luận đó sẽ làm hỏng chính đường đi của người dùng thật.

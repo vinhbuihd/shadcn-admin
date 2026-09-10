@@ -22,6 +22,18 @@ export type BuildAppOptions = {
 
 export function buildApp(options: BuildAppOptions = {}) {
     const app = Fastify({
+        /**
+         * `trustProxy: true` lấy phần tử trái nhất của `X-Forwarded-For` làm
+         * `request.ip`. Đã đo trên production (10/09/2026): Vercel **xoá** header do
+         * client tự gửi rồi ghi lại chuỗi của chính nó, nên qua đường Vercel thì
+         * phần tử trái nhất luôn là IP thật — không giả mạo được.
+         *
+         * Chuỗi đo được: client → Vercel → Cloudflare → Render (4 phần tử).
+         *
+         * Rủi ro còn lại: gọi thẳng URL Render (bỏ qua Vercel) thì header giả được
+         * giữ nguyên, và rate limit theo IP bị vô hiệu. Không có giá trị `trustProxy`
+         * nào chặn được việc này vì kẻ tấn công tự quyết số phần tử trong chuỗi.
+         */
         logger: loggerConfig,
         trustProxy: true,
     })
@@ -100,28 +112,6 @@ export function buildApp(options: BuildAppOptions = {}) {
     // GET /health
     app.get("/health", () => {
         return { status: 'ok' }
-    })
-
-    /**
-     * TẠM THỜI — dùng để đếm xem có bao nhiêu proxy đứng trước app trên production,
-     * rồi thay `trustProxy: true` bằng đúng con số đó. Xoá sau khi đo xong.
-     *
-     * Phải đặt dưới prefix /api vì đó là đường mà request thật đi qua
-     * (browser → Vercel rewrite → Render). Gọi thẳng Render sẽ ra chuỗi proxy khác.
-     */
-    app.get('/api/health/ip', async (request) => {
-        const forwardedFor = request.headers['x-forwarded-for']
-        const entries =
-            typeof forwardedFor === 'string'
-                ? forwardedFor.split(',').map((entry) => entry.trim())
-                : []
-
-        return {
-            ip: request.ip,
-            forwardedFor: forwardedFor ?? null,
-            hops: entries.length,
-            entries,
-        }
     })
 
     // GET /health/db
