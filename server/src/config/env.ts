@@ -14,3 +14,33 @@ const envSchema = z.object({
 })
 
 export const env = envSchema.parse(process.env)
+
+/**
+ * Chọn database theo môi trường.
+ *
+ * Test suite xoá sạch mọi bảng ở `beforeEach`, nên khi NODE_ENV=test nó bắt buộc
+ * phải chạy trên database riêng. Ở đây cố tình throw thay vì fallback về
+ * DATABASE_URL: fallback âm thầm nghĩa là `yarn test` sẽ xoá database dev — hoặc
+ * production, nếu .env đang tạm trỏ vào đó.
+ */
+export function resolveDatabaseUrl(): string {
+    if (env.NODE_ENV !== 'test') {
+        return env.DATABASE_URL
+    }
+
+    if (!env.DATABASE_URL_TEST) {
+        throw new Error(
+            'DATABASE_URL_TEST is required when NODE_ENV=test. ' +
+            'Tests wipe every table, so they must run on a dedicated database.'
+        )
+    }
+
+    if (env.DATABASE_URL_TEST === env.DATABASE_URL) {
+        throw new Error(
+            'DATABASE_URL_TEST must not be the same as DATABASE_URL. ' +
+            'Tests wipe every table, so they must run on a dedicated database.'
+        )
+    }
+
+    return env.DATABASE_URL_TEST
+}

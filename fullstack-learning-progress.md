@@ -224,10 +224,21 @@ Giai đoạn hiện tại: **hoàn thành Giai đoạn 1-5 (Production & Deploy)
 - [x] Deploy frontend: Vercel, dùng `vercel.json` rewrite `/api/*` sang Render — tránh luôn vấn đề cookie `sameSite: 'lax'` bị chặn cross-site vì browser chỉ thấy same-origin.
 - [x] Full flow đăng ký/đăng nhập/tạo bookmark test ok trên production thật.
 - [x] Tách logger theo môi trường (`server/src/config/logger.ts`): `development` dùng `pino-pretty`, `test` tắt hẳn, `production` JSON level `info`.
+- [x] Migration an toàn khi deploy: Render Free tier không có Pre-Deploy Command (tính năng trả phí) → chuyển sang chạy `yarn db:migrate` ngay trong `CMD` của `server/Dockerfile` trước khi start server (idempotent, an toàn chạy lại mỗi lần container khởi động/wake).
+
+**Giai đoạn 5 hoàn thành 100%.**
+
+Đã hoàn thành thêm (Củng cố - Test isolation):
+
+- [x] `resolveDatabaseUrl()` trong `server/src/config/env.ts`: khi `NODE_ENV=test` thì bắt buộc dùng `DATABASE_URL_TEST`.
+- [x] Throw khi thiếu `DATABASE_URL_TEST`, và throw khi nó trùng `DATABASE_URL` — không fallback âm thầm.
+- [x] `src/test/setup.ts` (code chết, không nơi nào import) đổi thành `src/test/global-setup.ts`, khai báo trong `vitest.config.ts`, tự chạy migration lên database test.
+- [x] `yarn db:create-test` tạo database test, idempotent (bỏ qua lỗi `42P04 duplicate_database`).
+- [x] CI: thêm `DATABASE_URL_TEST` riêng, thêm bước tạo database test, đổi `yarn test` thành `yarn test:run` để không rơi vào watch mode.
+- [x] `.env.example` bổ sung `DATABASE_URL_TEST`, `NODE_ENV`, `FRONTEND_URL`.
 
 Chưa hoàn thành:
 
-- [ ] Chạy migration an toàn khi deploy (hiện đang migrate thủ công 1 lần từ local, chưa có quy trình migrate khi có schema change mới sau này) — dự định dùng Render Pre-Deploy Command.
 - [ ] Hoàn thiện test CRUD bookmark, ownership, cascade.
 - [ ] Mở rộng features (share, full-text search, Redis).
 
@@ -314,7 +325,15 @@ Mục tiêu: không còn tin vào `x-user-id` do client tự gửi.
 
 ## 6. Bước học kế tiếp
 
-Chủ đề tiếp theo: **Giai đoạn 6 — Mở rộng sau MVP** (share bookmark, full-text search, rate limiting/audit log, theo dõi hiệu năng production), hoặc hoàn thiện nốt phần còn thiếu của Giai đoạn 5 (tách config dev/test/prod, quy trình migrate an toàn khi có schema thay đổi, structured logging).
+Củng cố nền trước, mở rộng feature sau. Thứ tự:
+
+1. ~~Tách database test~~ — xong.
+2. Test ownership (user A không đọc/sửa/xoá được dữ liệu user B) và test cascade. Đây là test bảo vệ được khi refactor, khác với test validation mà Zod đã lo.
+3. Rate limit `POST /api/auth/login` bằng `@fastify/rate-limit`. App đang public trên internet nên đây là bảo mật cơ bản, không phải "mở rộng".
+4. `setErrorHandler` toàn cục: gom ~10 khối `try/catch` giống nhau, tách lỗi nghiệp vụ khỏi lỗi hệ thống, trả lỗi validation có nói rõ field sai thay vì `"Invalid request"`.
+5. Feature tiếp theo nên là **tự động lấy title/favicon/og:image từ URL**, không phải share link — nó ép học gọi HTTP ra ngoài có timeout, chống SSRF, background job, và xử lý trạng thái trung gian ở frontend.
+
+Sau đó mới tới Giai đoạn 6: full-text search (seed 100k dòng rồi `EXPLAIN` để thấy `ILIKE '%...%'` không dùng được index), refresh token / thu hồi token, và theo dõi lỗi production.
 
 Nguyên tắc bảo mật đang giữ:
 
@@ -330,3 +349,10 @@ Nguyên tắc bảo mật đang giữ:
 - Cookie không set `path` sẽ mặc định scope theo thư mục của URL lúc set (vd: set ở `/api/auth/login` → cookie chỉ áp dụng cho `/api/auth/*`), không phải toàn site. Luôn set `path: '/'` tường minh khi cookie cần dùng ở nhiều route.
 - TypeScript không tự biết type của `app.decorate(...)` hay payload JWT — cần module augmentation (`declare module 'fastify'`, `declare module '@fastify/jwt'`) trong file `.d.ts` riêng.
 - Không tiết lộ khác biệt giữa "email không tồn tại" và "sai mật khẩu" trong response login — tránh user enumeration.
+
+### Bài học rút ra từ Test isolation
+
+- Test import `db` từ `src/db/index.ts`, mà file đó luôn nối `DATABASE_URL` — nên `beforeEach` xoá 4 bảng thực chất đang xoá database dev. Nếu `.env` có lúc trỏ Neon production thì `yarn test` xoá luôn dữ liệu thật. `src/test/setup.ts` viết đúng ý định nhưng không nơi nào import: viết code an toàn chưa đủ, phải kiểm tra nó có thực sự chạy.
+- Fallback âm thầm kiểu `DATABASE_URL_TEST || DATABASE_URL` là cách lỗi đi vào production. Với thao tác phá huỷ dữ liệu, fail cứng tốt hơn đoán.
+- ESM nạp toàn bộ `import` trước khi chạy câu lệnh đầu tiên, nên gán `process.env.NODE_ENV` ở đầu file rồi `import` config tĩnh sẽ không có tác dụng — phải dùng dynamic import. `test.env` của Vitest cũng chỉ áp cho worker, không áp cho `globalSetup`.
+- `dotenv` không ghi đè biến đã có trong `process.env`, nên biến từ shell/CI luôn thắng `.env`. Cũng vì vậy, muốn kiểm thử nhánh "thiếu biến" phải chạy với env file rỗng, không thể chỉ bỏ biến ở shell.

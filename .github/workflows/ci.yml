@@ -50,6 +50,8 @@ jobs:
     # Env shared by every step below (migrate + test both need DB access)
     env:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      # Test xoá sạch mọi bảng nên phải chạy trên database riêng, kể cả trên CI
+      DATABASE_URL_TEST: postgresql://postgres:postgres@postgres:5432/bookmark_manager_test
       JWT_SECRET: ci-test-secret-key-at-least-32-characters-long
 
     services:
@@ -81,5 +83,8 @@ jobs:
       - name: Run database migrations
         run: yarn db:migrate
 
+      - name: Create test database
+        run: yarn db:create-test
+
       - name: Run tests
-        run: yarn test
+        run: yarn test:run
