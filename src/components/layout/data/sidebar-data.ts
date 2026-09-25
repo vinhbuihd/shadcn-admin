@@ -80,9 +80,8 @@ export const sidebarData: SidebarData = {
           icon: Package,
         },
         {
-          title: 'Chats',
+          title: 'Chat',
           url: '/chats',
-          badge: '3',
           icon: MessagesSquare,
         },
         {

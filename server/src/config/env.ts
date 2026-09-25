@@ -8,6 +8,10 @@ const envSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3000),
     HOST: z.string().min(1).default('0.0.0.0'),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+    // APP_KEY giữ tương thích với tên biến đã được cấu hình trên SIT.
+    KAIRO_APP_KEY: z.string().min(1).optional().or(z.literal('')).transform((value) => value || undefined),
+    APP_KEY: z.string().min(1).optional().or(z.literal('')).transform((value) => value || undefined),
+    KAIRO_SDK_BASE_URL: z.string().url().default('https://api.sit.yousee.vn'),
 
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     FRONTEND_URL: z.string().url().default('http://localhost:5173'),

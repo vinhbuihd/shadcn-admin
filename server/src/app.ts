@@ -11,6 +11,7 @@ import { errorHandler } from './lib/error-handler.js'
 import { authRoutes, type AuthRateLimit } from './routes/auth.js'
 import { bookmarkRoutes } from './routes/bookmarks.js'
 import { tagRoutes } from './routes/tags.js'
+import { kairoRoutes } from './routes/kairo.js'
 
 export type BuildAppOptions = {
     /**
@@ -103,6 +104,7 @@ export function buildApp(options: BuildAppOptions = {}) {
     app.register(bookmarkRoutes, {
         prefix: '/api',
     })
+    app.register(kairoRoutes, { prefix: '/api' })
 
     // onClose
     app.addHook('onClose', async () => {

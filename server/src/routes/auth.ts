@@ -7,6 +7,7 @@ import { db } from "../db/index.js";
 import { users } from "../db/schema/users.js";
 import { NotFoundError, UnauthorizedError } from "../lib/errors.js";
 import { parseOrThrow } from "../lib/validate.js";
+import { revokeCurrentLoginKairoSessions } from '../lib/kairo-sessions.js';
 
 
 const registerBodySchema = z.object({
@@ -140,7 +141,8 @@ export async function authRoutes(app: FastifyInstance, options: AuthRoutesOption
     })
 
     // POST /api/auth/logout
-    app.post('/auth/logout', { preHandler: [app.authenticate] }, async (_request, reply) => {
+    app.post('/auth/logout', { preHandler: [app.authenticate] }, async (request, reply) => {
+        await revokeCurrentLoginKairoSessions(request)
         reply.clearCookie('auth', cookieOptions)
 
         return reply.code(200).send({
